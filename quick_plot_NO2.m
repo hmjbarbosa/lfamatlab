@@ -16,11 +16,7 @@ clear
 close all
 [tmp,mydir]=fileparts(pwd);
 
-if strcmp(mydir,'A_T2')
-    station=' - T2 (Tiwa)';
-else
-    station=[' - ' mydir];    
-end;
+station=mydir;    
 
 fl_dir='NO2/raw/';
 
@@ -32,7 +28,7 @@ if exist('mat-files/NO2.mat')>0
     load mat-files/NO2.mat
     count_rem=0;
     clear rem_idx
-    fl=dir([fl_dir,'caps*.dat']);
+    fl=dir([fl_dir,'CAPS*.dat']);
 
     for i=1:max(size(fl_old))
         for j=1:max(size(fl))
@@ -50,7 +46,7 @@ if exist('mat-files/NO2.mat')>0
     fl_old=[fl_old;fl];
 
 else
-    fl=dir([fl_dir,'caps*.dat']);
+    fl=dir([fl_dir,'CAPS*.dat']);
     count=0;
     count_old=1;
     time_NO2_avg=[];
@@ -68,7 +64,8 @@ elseif min(size(fl))>0
     for fl_number=1:max(size(fl))
 
         fid = fopen([fl_dir,fl(fl_number).name]);
-
+        disp([fl_dir,fl(fl_number).name]);
+        
         while ~feof(fid)
             TextLine = fgetl(fid);
             delimiters=0;
@@ -140,7 +137,7 @@ while count_old < count
     count_old=count_old+i+1;
 end;
 
-if isunix
+if nodisplay
     fig1 = figure('visible','off');
 else
     fig1=figure;
@@ -150,7 +147,7 @@ set(fig1,'InvertHardcopy','on');
 set(gca, 'FontSize', 12, 'LineWidth', 2); 
 
 plot(time_NO2,NO2,'k*')
-title(['NO2 (CAPS)',station])
+title(['NO2 (CAPS) - ',station])
 xlabel('Date')
 ylabel(label_NO2)
 ylim([0 40])
@@ -160,7 +157,7 @@ dynamicDateTicks([], [], 'dd/mm');
 set(gca,'Units','normalized','Position',[0.13 0.11 0.775 0.515]);
 nome=['fig/NO2_' mydir '_Time_series'];
 
-if isunix
+if nodisplay
     print(fig1,'-depsc',[nome,'.eps']);
     eval(['!convert -density 300 ',nome,'.eps ',nome,'.png'])
     eval(['delete ',nome,'.eps'])
@@ -190,13 +187,7 @@ end;
 if min(size(days_NO2))>0
     for i=1:max(size(days_NO2))
 
-         if days_NO2(i)<=datenum(2014,04,01)
-            fig_name=['fig/IOP1/NO2_',mydir,'_',datestr(days_NO2(i),29)];
-        elseif days_NO2(i)>datenum(2014,04,01) && days_NO2(i)<datenum(2014,08,15)
-            fig_name=['fig/April_to_Aug_2014/NO2_',mydir,'_',datestr(days_NO2(i),29)];
-        elseif days_NO2(i)>=datenum(2014,08,15) && days_NO2(i)<=datenum(2014,10,15)
-            fig_name=['fig/IOP2/NO2_',mydir,'_',datestr(days_NO2(i),29)];
-         end
+        fig_name=['fig/NO2_',mydir,'_',datestr(days_NO2(i),29)];
 
         clear fig1;
 
@@ -217,7 +208,7 @@ if min(size(days_NO2))>0
 
         if idx_end>idx_st+30
 
-            if isunix
+            if nodisplay
                 fig1 = figure('visible','off');            
             else
                 fig1=figure;
@@ -240,14 +231,14 @@ if min(size(days_NO2))>0
             ylim(axes1,[min(NO2(idx_st:idx_end)) max(NO2(idx_st:idx_end))])
             xlim(axes1,[0 24])
 
-            title(['NO2 (CAPS)',station,' - ',datestr(days_NO2(i),1)])
+            title(['NO2 (CAPS) - ',station,' - ',datestr(days_NO2(i),1)])
             xlabel('Time (UTC)')
             ylabel(label_NO2)
             box on
 
             set(gca,'Units','normalized','Position',[0.13 0.11 0.775 0.515]);
 
-            if isunix
+            if nodisplay
                 print(fig1,'-depsc',[fig_name,'.eps']);
                 eval(['!convert -density 300 ',fig_name,'.eps ',fig_name,'.png'])
                 eval(['delete ',fig_name,'.eps '])
@@ -259,24 +250,12 @@ if min(size(days_NO2))>0
     end;
 end;
 
-if isunix
-    
-    fid = fopen('0_Ascii-files/NO2.csv','wt');
-    fprintf(fid,'Date(UTC), NO2 mixing ratio (ppbv)\n');
-    for i=1:max(size(time_NO2_avg))
-        fprintf(fid,'%s, %2.2f\n',datestr(time_NO2_avg(i)),NO2_avg(i));
-    end;
-    fclose(fid);
-
-
-    !rm -f mat-files/NO2.mat
+fid = fopen('0_Ascii-files/NO2.csv','wt');
+fprintf(fid,'Date(UTC), NO2 mixing ratio (ppbv)\n');
+for i=1:max(size(time_NO2_avg))
+  fprintf(fid,'%s, %2.2f\n',datestr(time_NO2_avg(i)),NO2_avg(i));
 end;
+fclose(fid);
 
 save mat-files/NO2.mat
-
-
-if isunix
-    !chmod 777 0_Ascii-files/NO2.csv
-    !chmod 777 mat-files/NO2.mat
-end;
 

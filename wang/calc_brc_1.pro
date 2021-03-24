@@ -19,6 +19,10 @@ BrAAOD_r = -999.
 BrCont = -999.
 BrCont_r = -999.
 
+;hmjb init AAE
+AAE440 = -999.
+;hmjb save Bond table line number
+isel = -1
 
 n1 = n_elements(bondmie.aae)
 
@@ -31,9 +35,12 @@ n1 = n_elements(bondmie.aae)
 
         AAE440 = -alog(abs1/abs2)/alog(440./870.)
         realdef = exp(AAE440) / exp(AAE675) 
+;hmjb save selected line
+        isel = i
         
         if realdef gt bondmie[i].maxdef then begin
-
+;hmjb
+          print, 'There is BrC!'
           bcaae = AAE675 + alog(bondmie[i].middef)
           BCAAOD = abs3 *  exp(-bcaae * alog(440./870.))
           BrAAOD = abs1 - BCAAOD
@@ -47,6 +54,8 @@ n1 = n_elements(bondmie.aae)
           BrCont_r = 100* BrAAOD_r / abs1
 
         endif else begin
+;hmjb
+          print, 'Could not find BrC :-('
           BCAAOD = abs1
           BrCont = 0
         endelse
@@ -56,6 +65,17 @@ n1 = n_elements(bondmie.aae)
     endfor
 
 result = [BrAAOD, BrAAOD_r, BrCont, BrCont_r, BCAAOD]
+
+;hmjb print some helpful output
+print, 'BrC_AAOD=',BrAAOD
+print, 'BrC_Cont=',BrCont
+print, 'BC_AAOD=',BCAAOD
+print, 'AAE_440_880=',AAE440
+print, 'AAE_675_880=',AAE675
+print, 'realdef=',realdef
+print, 'bond max=',bondmie[isel].maxdef
+;hmjb IDL start counting from 0, but we want table lines starting at 1
+print, 'line bond table=',isel+1
 
 return, result
 

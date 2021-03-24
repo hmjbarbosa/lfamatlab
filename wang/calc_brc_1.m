@@ -55,7 +55,7 @@ function [data] = calc_brc_1(abs1,abs2,abs3,wave1,wave2,wave3)
 
 % Mie calculations as discussed in Wang's paper
 % Shared as a binary IDL file named "basemie_AERONET.sav"
-% bondmie = [...
+% basemie = [...
 %     0.1,       0.856656,       0.971063,       0.913860 ;...
 %     0.3,       0.818784,       0.923744,       0.871264 ;...
 %     0.5,       0.778845,       0.904880,       0.841863 ;...
@@ -64,26 +64,30 @@ function [data] = calc_brc_1(abs1,abs2,abs3,wave1,wave2,wave3)
 %     1.1,       0.752517,       1.051050,       0.901783 ;...
 %     1.3,       0.767029,       1.089620,       0.928326 ;...
 %     1.6,       0.811395,       1.030230,       0.920813  ];
-% bondmie_aae, bondmie_mindef, bondmie_maxdef, bondmie_middef
-bondmie.aae    = [     0.1,      0.3,      0.5,      0.7,      0.9,      1.1,      1.3,      1.6];
-bondmie.mindef = [0.856656, 0.818784, 0.778845, 0.764685, 0.753013, 0.752517, 0.767029, 0.811395];
-bondmie.maxdef = [0.971063, 0.923744, 0.904880, 0.877989, 0.890559, 1.051050, 1.089620, 1.030230];
-bondmie.middef = [0.913860, 0.871264, 0.841863, 0.821337, 0.821786, 0.901783, 0.928326, 0.920813];
+% basemie_aae, basemie_mindef, basemie_maxdef, basemie_middef
+basemie_aae    = [     0.1,      0.3,      0.5,      0.7,      0.9,      1.1,      1.3,      1.6];
+basemie_Hlim   = [     0.2,      0.4,      0.6,      0.8,      1.0,      1.2,      1.4,      1.7];
+basemie_Llim   = [     0.0,      0.2,      0.4,      0.6,      0.8,      1.0,      1.2,      1.4];
+basemie_mindef = [0.856656, 0.818784, 0.778845, 0.764685, 0.753013, 0.752517, 0.767029, 0.811395];
+basemie_maxdef = [0.971063, 0.923744, 0.904880, 0.877989, 0.890559, 1.051050, 1.089620, 1.030230];
+basemie_middef = [0.913860, 0.871264, 0.841863, 0.821337, 0.821786, 0.901783, 0.928326, 0.920813];
+basemie_N = length(basemie_aae);
 
 % Initialize all variables
-AAE13    = nan(size(abs1));
-%AAE23    = nan(size(abs1));
-realdef  = nan(size(abs1));
-BrAAOD   = nan(size(abs1));
-BrAAOD_r = nan(size(abs1));
-BrCont   = nan(size(abs1));
-BrCont_r = nan(size(abs1));
-bcaae    = nan(size(abs1));
-bcaae_max = nan(size(abs1));
-bcaaod_max = nan(size(abs1));
-braaod_min = nan(size(abs1));
-BCAAOD   = nan(size(abs1));
-isel     = nan(size(abs1));
+ntimes = size(abs1,1);
+AAE13    = nan(ntimes,1);
+%AAE23    = nan(ntimes,1);
+realdef    = nan(ntimes,1);
+BrAAOD     = nan(ntimes,1);
+BrAAOD_r   = nan(ntimes,1);
+BrCont     = nan(ntimes,1);
+BrCont_r   = nan(ntimes,1);
+bcaae      = nan(ntimes,1);
+bcaae_max  = nan(ntimes,1);
+bcaaod_max = nan(ntimes,1);
+braaod_min = nan(ntimes,1);
+BCAAOD     = nan(ntimes,1);
+isel       = nan(ntimes,1);
 
 % If you decide to use different wavelengths than Wang's, note that they
 % should still be "compatible" with those used in his Mie simulation, i.e.,
@@ -93,51 +97,44 @@ isel     = nan(size(abs1));
 % Compute AAE between wave2 and wave3 
 AAE23 = -log(abs2./abs3)/log(wave2/wave3);
 
-% Now between wave1 and wave3
-% NOTE: Wang's original code had a bug and used abs1/abs2
-AAE13 = -log(abs1./abs3)/log(wave1/wave3);
-
-% The ratio between these AAE tells give the "curvature" of the spectral
-% response curve
-realdef = exp(AAE13)./exp(AAE23);
-
-%% LOOP on MIE table lines
-for i = 1:length(bondmie.aae)
   %% LOOP on time 
-  for t = 1:length(AAE23)
+  for t = 1:ntimes
+%% LOOP on MIE table lines
+for i = 1:basemie_N
     
     % Fix problem with range around AAE in last line of mie table
-    lowlim  = bondmie.aae(i)-0.1;
-    highlim = bondmie.aae(i)+0.1; 
+    %lowlim  = basemie_aae(i)-0.1;
+    %highlim = basemie_aae(i)+0.1; 
+    %
+    %if i==basemie_N
+    %  lowlim = basemie_aae(i)-0.2;
+    %end
     
-    if i==length(bondmie.aae)
-      lowlim = bondmie.aae(i)-0.2;
-    end
-    
-    if (AAE23(t) >= lowlim) & (AAE23(t) < highlim)
+    %if (AAE23(t) >= lowlim) & (AAE23(t) < highlim)
+    if (AAE23(t) >= basemie_Llim(i)) & (AAE23(t) < basemie_Hlim(i))
       % Save MIE table line number used for each time t
       isel(t) = i;
       
       % Compute AAE between wave1 and wave3
       % NOTE: Wang's original code had a bug and used abs1/abs2
-      %AAE13(t) = -log(abs1(t)/abs3(t))/log(wave1/wave3);
+      AAE13(t) = -log(abs1(t)/abs3(t))/log(wave1/wave3);
       
       % Change in slope
-      %realdef(t) = exp(AAE13(t))/exp(AAE23(t));
+      realdef(t) = exp(AAE13(t))/exp(AAE23(t));
       
       % We found BrC (for sure) if the change in slope is larger than the
       % maximum change in the MIE calculations (which included only BC)
-      if realdef(t) > bondmie.maxdef(i);
+      if realdef(t) > basemie_maxdef(i);
 
         % extrapolate BC AAE to wave1
-        bcaae(t) = AAE23(t)+log(bondmie.middef(i));
+        bcaae(t) = AAE23(t)+log(basemie_middef(i));
         % use it to compute AAOD
         BCAAOD(t) = abs3(t)*exp(-bcaae(t)*log(wave1/wave3));
         % BrC AAOD will be the residual
         BrAAOD(t) = abs1(t)-BCAAOD(t);
 
         % estimate the uncertainty in AAOD
-        bcaae_max(t) = AAE23(t)+log(bondmie.maxdef(i));
+        bcaae_max(t) = AAE23(t)+log(basemie_maxdef(i));
         bcaaod_max(t) = abs3(t)*exp(-bcaae_max(t)*log(wave1/wave3));
         braaod_min(t) = abs1(t)-bcaaod_max(t);
         BrAAOD_r(t) = BrAAOD(t)-braaod_min(t);
@@ -148,17 +145,16 @@ for i = 1:length(bondmie.aae)
         
       else
         % In case there is no BrC, all absorption is due to BC
-        BCAAOD(t) = abs1(t);
-        BrCont(t) = 0;
-        %BrAAOD(t) = 0;
+        BCAAOD(t)   = abs1(t);
+        BrCont(t)   = 0;
+        BrCont_r(t) = 0;
+        BrAAOD(t)   = 0;
+        BrAAOD_r(t) = 0;
       end
     end
     
   end
 end
-
-%BrCont = 100*BrAAOD./abs1;
-%BrCont_r = 100*BrAAOD_r./abs1;
 
 %hmjb acabou de rodar, vamos mostrar os resultados para os tempos= 1 e 2
 
@@ -168,10 +164,10 @@ for t=1:1
   disp(['BrAAOD='         ,num2str(BrAAOD(t))])
   disp(['BrCont='         ,num2str(BrCont(t))])
   disp(['BCAAOD='         ,num2str(BCAAOD(t))])
-  disp(['AAE13='         ,num2str(AAE13(t))])
-  disp(['AAE23='         ,num2str(AAE23(t))])
+  disp(['AAE13='          ,num2str(AAE13(t))])
+  disp(['AAE23='          ,num2str(AAE23(t))])
   disp(['realdef='        ,num2str(realdef(t))])
-  disp(['bond max='       ,num2str(bondmie.maxdef(isel(t)))])
+  disp(['maxdef='         ,num2str(basemie_maxdef(isel(t)))])
   disp(['line bond table=',num2str(isel(t))])
 end
 

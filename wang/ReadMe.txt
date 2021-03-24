@@ -4,7 +4,7 @@ measurements. The method is described in:
 Wang, X., C.L. Heald, A.J. Sedlacek, S.S. de Sa, S.T. Martin,
 M.L. Alexander, T.B. Watson, A.C. Aiken, S.R. Springston, P. Artaxo
 (2016), Deriving Brown Carbon from Multi-Wavelength Absorption
-Measurements: Method and Application to Aethalometer Observations
+Measurements: Method and Application to AERONET and Aethalometer Observations
 Atmos. Chem. Phys., 16, 12733-12752, doi:10.5194/acp-16-12733-2016.
 
 How to use:

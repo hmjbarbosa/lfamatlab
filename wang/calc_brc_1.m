@@ -1,57 +1,110 @@
-function [data] = calc_brc_1(abs1,abs2,abs3,wave1,wave2,wave3)
+function [brcdata] = calc_brc_1(abs1,abs2,abs3,wave1,wave2,wave3,tidx)
+%CALC_BRC_1   Estimate BrC from absorption measurements.
+%   [brcdata] = CALC_BRC_1(abs1,abs2,abs3,wave1,wave2,wave3) uses absorption
+%   measurements (abs1, abs2, and abs3) at three wavelengths (wave1, wave2,
+%   wave3) to estimate the brown carbon. Wavelengths are expected in nm, and
+%   absorptions can be either AAOD (no units) or Extinction (Mm-1),
+%   typically as Nx1 arrays (e.g. from in-situ measurement). brcdata will
+%   be Nx5, with output columns corresponding to:
+%
+%      col1) BrC absorption
+%      col2) uncertainty of BrC absorption
+%      col3) Relative contribution (%) of BrC to absorption
+%      col4) uncertainty of Relative contribution (%) of BrC to absorption
+%      col5) BC absorption 
+%
+%   CALC_BRC_1(...,tidx) will print detailed information for all array
+%   indexes (i.e. times) given in tidx. 
+%
+%   METHOD
+%
+%   Abs values at wave2 and wave3 are assumed to be influenced by BC alone.
+%   Together with a look-up-table based on MIE calculations, they are used
+%   to extrapolate the BC absorption to wave1. The effect of the brown
+%   carbon is then computed as the total absorption at wave1 subtracted by
+%   the extrapolated BC absorption. The 3 wavelengths are those from
+%   AERONET: 
+%
+%      wave1) UV (440nm)
+%      wave2) Visible (675nm)
+%      wave3) NIR (870nm)
+%
+%   If you decide to use different wavelengths, note that they should still
+%   be "compatible" with those used in the Mie simulation, i.e., you should
+%   expect the AAE to be similar for your wavelengths and the original ones.
+%
+%   Also note that this approach for separating brown and black carbon
+%   absorptions assumes that you only have BC and BrC. If there are dust
+%   particles contributing to your absorption measurements, you may need to
+%   exclude them first.
+%
+%   The methodology was developed by Xuan Wang and is described in: 
+%
+%      Wang, X., et al., 2016: Deriving Brown Carbon from Multi-Wavelength
+%         Absorption Measurements: Method and Application to AERONET and
+%         Aethalometer Observations Atmos. Chem. Phys., 16, 12733-12752,
+%         doi:10.5194/acp-16-12733-2016.
+% 
+%   HISTORY
+%
+%   24-March-2021 Revamped Matlab version by Henrique Barbosa (USP). 
+%                 This includes major bug fixes: 
+%                 - Handling of time series
+%                 - Correct abs for AAE440
+%                 - Correct AAE intervals in MIE table
+%                 - Extrapolate BC using mid value instead of min
+%                 - Numerical optimization
+%
+%            2018 Matlab version by Rafael Palacios (UFMT)
+%
+%   10-April-2017 Original IDL code from Xuan Wang (MIT)
+%
+%   CONTACT: hmjbarbosa@gmail.com
+%
 
-% This is an IDL script to seperate BC and BrC AAOD from AERONET
-% measurements. The method is described in:
-% 
-% Wang, X., C.L. Heald, A.J. Sedlacek, S.S. de Sa, S.T. Martin,
-% M.L. Alexander, T.B. Watson, A.C. Aiken, S.R. Springston, P. Artaxo
-% (2016), Deriving Brown Carbon from Multi-Wavelength Absorption
-% Measurements: Method and Application to Aethalometer Observations
-% Atmos. Chem. Phys., 16, 12733-12752, doi:10.5194/acp-16-12733-2016.
-% 
-% How to use:
-% 
-% 1) You need to put both ".pro" and ".sav" files in the same location
-% as your processing directory.
-% 
-% 2) Note that this approach is for separating brown and black carbon
-% absorptions. If there are dust absorption contributing your
-% measurements, you may need to exclude them first.
-% 
-% 3) Use the function calc_brc_1 in IDL environment, for example:
-% 
-% result = calc_brc_1(a, b, c)
-% 
-% Input: a, b, and c are the original AERONET AAOD at 440, 675 and 870nm
-% 
-% Output is a 5-elements array: [result[0], result[1], result[2], result[3], result[4]]
-% 
-% result[0] is the calculated brown carbon AAOD at 440nm
-% result[1] is the methodology uncertainty of result[0]
-% result[2] is the calculated contribution of brown carbon AAOD to total AAOD at 440nm, in %
-% result[3] is the methodology uncertainty of result[2]
-% result[4] is the calculated BC AAOD at 440nm
-% 
-% Contact: Xuan Wang, xuanw12@mit.edu
+%%
 
-% cálculo da contribuição de Brown carbon na absorção
+% Check if all inputs are present
+if nargin<6
+  error('Expected at least 6 arguments, 3 absorptions and 3 wavelengths.')
+end
+% Check arrays have the same length
+if (numel(abs1) ~= numel(abs2)) | (numel(abs2) ~= numel(abs3))
+  error('Absorption arrays must have the same lengths.')
+end
+% Check arrays are 1-D
+if (min(size(abs1))>1) | (min(size(abs2))>1) | (min(size(abs3))>1)
+  error('Absorption arrays must be 1-dimension (vary only with time).')
+end
+% Check arrays are Nx1
+if size(abs1,1)==1; abs1 = abs1'; end
+if size(abs2,1)==1; abs2 = abs2'; end
+if size(abs3,1)==1; abs3 = abs3'; end
+% Check wavelengths are numbers
+if (numel(wave1)~=1) | (numel(wave2)~=1) | (numel(wave3)~=1)
+  error('Wavelengths are numbers, not arrays.')
+end
+% Check they are increasing
+if ~( (wave1<wave2) & (wave2<wave3) )
+  error('Condition wave1 < wave2 < wave3 not satisfied.')
+end
+% Check units (kind of...)
+if (wave1<1e2) | (wave2<1e2) | (wave3<1e2) | ...
+   (wave1>1e3) | (wave2>1e3) | (wave3>1e3)
+  error('Wavelengths must be given in nm.')
+end
+% Check for reasonable values
+if (wave1<400) | (wave1>500)
+  error(['Unreasonable wave1 = ' num2str(wave1) ' nm'])
+end
+if (wave2<625) | (wave2>725)
+  error(['Unreasonable wave2 = ' num2str(wave2) ' nm'])
+end
+if (wave3<820) | (wave3>920)
+  error(['Unreasonable wave3 = ' num2str(wave3) ' nm'])
+end
 
-% BrAAOD = é o BrC calculado AAOD a 440nm
-% BrAAOD_r = é a incerteza metodológica do resultado BrAAOD
-% BrCont = é a contribuição calculada de BrC AAOD para AAOD total a 440nm, em %
-% BrCont_r = é a incerteza metodológica do resultado BrCont
-% BCAAOD = considerando BC calculado AAOD a 440nm = AAOD 440nm
-
-% col_01 Date
-% col_02 BrC calculado AAOD 440nm
-% col_03 Incerteza do BrC calculado AAOD 440nm 
-% col_04 Porcentagem de BrC AAOD 440nm em relação ao total de AAOD 440nm
-% col_05 Incerteza da medida col_04
-% col_06 AAOD 440nm
-% col_07 BC real 440nm (AAOD 440nm - BrC 440nm)
-
-%clear all;
-%clc;
+%%
 
 % Mie calculations as discussed in Wang's paper
 % Shared as a binary IDL file named "basemie_AERONET.sav"
@@ -74,7 +127,7 @@ basemie_middef = [0.913860, 0.871264, 0.841863, 0.821337, 0.821786, 0.901783, 0.
 basemie_N = length(basemie_aae);
 
 % Initialize all variables
-ntimes = size(abs1,1);
+ntimes = numel(abs1);
 AAE13    = nan(ntimes,1);
 %AAE23    = nan(ntimes,1);
 realdef    = nan(ntimes,1);
@@ -89,28 +142,15 @@ braaod_min = nan(ntimes,1);
 BCAAOD     = nan(ntimes,1);
 isel       = nan(ntimes,1);
 
-% If you decide to use different wavelengths than Wang's, note that they
-% should still be "compatible" with those used in his Mie simulation, i.e.,
-% you should expect the AAE to be similar even though the wavelengths are
-% not equal.
-
 % Compute AAE between wave2 and wave3 
 AAE23 = -log(abs2./abs3)/log(wave2/wave3);
 
-  %% LOOP on time 
-  for t = 1:ntimes
-%% LOOP on MIE table lines
-for i = 1:basemie_N
+%% LOOP on time 
+for t = 1:ntimes
+  
+  %% LOOP on MIE table lines
+  for i = 1:basemie_N
     
-    % Fix problem with range around AAE in last line of mie table
-    %lowlim  = basemie_aae(i)-0.1;
-    %highlim = basemie_aae(i)+0.1; 
-    %
-    %if i==basemie_N
-    %  lowlim = basemie_aae(i)-0.2;
-    %end
-    
-    %if (AAE23(t) >= lowlim) & (AAE23(t) < highlim)
     if (AAE23(t) >= basemie_Llim(i)) & (AAE23(t) < basemie_Hlim(i))
       % Save MIE table line number used for each time t
       isel(t) = i;
@@ -156,20 +196,26 @@ for i = 1:basemie_N
   end
 end
 
-%hmjb acabou de rodar, vamos mostrar os resultados para os tempos= 1 e 2
-
-for t=1:1
-  disp(['======================= tempo ',num2str(t)])
-  disp(['abs1/abs2/abs3=' , num2str(abs1(t)), num2str(abs2(t)), num2str(abs3(t))])
-  disp(['BrAAOD='         ,num2str(BrAAOD(t))])
-  disp(['BrCont='         ,num2str(BrCont(t))])
-  disp(['BCAAOD='         ,num2str(BCAAOD(t))])
-  disp(['AAE13='          ,num2str(AAE13(t))])
-  disp(['AAE23='          ,num2str(AAE23(t))])
-  disp(['realdef='        ,num2str(realdef(t))])
-  disp(['maxdef='         ,num2str(basemie_maxdef(isel(t)))])
-  disp(['line bond table=',num2str(isel(t))])
+% detailed results for tidx
+if exist('tidx')
+  for t=tidx
+    disp(['======================= Time= ',num2str(t)])
+    disp(['abs1/abs2/abs3 = ', num2str([abs1(t), abs2(t), abs3(t)])])
+    disp(['BrC_AAOD       = ', num2str(BrAAOD(t))])
+    disp(['BrC_Cont(%)    = ', num2str(BrCont(t))])
+    disp(['BC_AAOD        = ', num2str(BCAAOD(t))])
+    disp(['AAE_13         = ', num2str(AAE13(t))])
+    disp(['AAE_23         = ', num2str(AAE23(t))])
+    disp(['realdef        = ', num2str(realdef(t))])
+    disp(['table line#    = ', num2str(isel(t))])
+    if ~isnan(isel(t))
+      disp(['maxdef         = ', num2str(basemie_maxdef(isel(t)))])
+    else
+      disp(['maxdef         = ', num2str(nan)])
+    end
+  end
 end
 
-data = [BrAAOD BrAAOD_r BrCont BrCont_r BCAAOD isel AAE23]; 
+% output
+brcdata = [BrAAOD BrAAOD_r BrCont BrCont_r BCAAOD isel AAE23]; 
 

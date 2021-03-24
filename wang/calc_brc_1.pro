@@ -30,10 +30,25 @@ n1 = n_elements(bondmie.aae)
 
     for i = 0, n1-1 do begin
 
-      if AAE675 ge bondmie[i].aae-0.1 and $
+;hmjb Table has values for .1, .3, .5, .7, .9, 1.1, 1.3 and 1.6
+; Hence, the test bellow means a gap for 1.4 < AAE <= 1.5 because it
+; is not in the +-0.1 range. For the last table line (1.6) the lower
+; limit has to be 1.6-0.2 = 1.4
+       
+;      if AAE675 ge bondmie[i].aae-0.1 and $
+;         AAE675 lt bondmie[i].aae+0.1 then begin
+
+      lowlim = bondmie[i].aae-0.1
+      if i eq n1-1 then begin
+         lowlim = bondmie[i].aae-0.2
+      endif
+    
+      if AAE675 ge lowlim and $
          AAE675 lt bondmie[i].aae+0.1 then begin
 
-        AAE440 = -alog(abs1/abs2)/alog(440./870.)
+;hmjb Should be AAE between 440 (abs1) and 880 (abs3)
+;bug        AAE440 = -alog(abs1/abs2)/alog(440./870.)
+        AAE440 = -alog(abs1/abs3)/alog(440./870.)
         realdef = exp(AAE440) / exp(AAE675) 
 ;hmjb save selected line
         isel = i

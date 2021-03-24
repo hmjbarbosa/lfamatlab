@@ -14,13 +14,22 @@
 % col_06 AAOD 440nm
 % col_07 BC real 440nm (AAOD 440nm - BrC 440nm)
 
-clear all;
-clc;
+%clear all;
+%clc;
 
 %load('V3_Data_Inversion_2019_02_lev1_5.mat')
 
-cd 'D:\Documentos\Google Drive\Doutorado\AERONET_util_rapido\marco\atto\AAOD_absorcao\ABS\total_2019\'
+%cd 'D:\Documentos\Google Drive\Doutorado\AERONET_util_rapido\marco\atto\AAOD_absorcao\ABS\total_2019\'
 RioBranco = import_abs('AAOD_1_5_Almucanter_Amazon_ATTO_Tower.tab');
+%hmjb As colunas lidas do arquivo sao:
+% 1 - dd:mm:yyyy (que bizarro!! quem eh que usa : para separar datas?!?)
+% 2 - hh:mm:ss (ufaa, achei que iam usar / para separar hora de minutos
+% 3 - AAOD em 440
+% 4 - AAOD em 675
+% 5 - AAOD em 870
+% 6 - AAOD em 1020
+% 7 - Abs Angstrom 440-870
+
 dateStr = [char(RioBranco(:,1)) char(RioBranco(:,2))];
 date = datenum(dateStr,'dd:mm:yyyyHH:MM:SS');
 
@@ -28,8 +37,23 @@ date = datenum(dateStr,'dd:mm:yyyyHH:MM:SS');
 %filtro
 %Fazer as series temporais e os graficos de pizza
 
-cd 'D:\Documentos\Google Drive\Doutorado\Tratamento\Analises_BrC\'
+%cd 'D:\Documentos\Google Drive\Doutorado\Tratamento\Analises_BrC\'
 bondmie = importdata('bondmie.csv');
+
+%hmjb dados da Tammy Bond: 
+% bondmie_aae,bondmie_mindef,bondmie_maxdef,bondmie_middef
+% 0.1        ,0.856656      ,0.971063      ,0.91386
+% 0.3        ,0.818784      ,0.923744      ,0.871264
+% 0.5        ,0.778845      ,0.90488       ,0.841863
+% 0.7        ,0.764685      ,0.877989      ,0.821337
+% 0.9        ,0.753013      ,0.890559      ,0.821786
+% 1.1        ,0.752517      ,1.05105       ,0.901783
+% 1.3        ,0.767029      ,1.08962       ,0.928326
+% 1.6        ,0.811395      ,1.03023       ,0.920813
+
+%hmjb MUITO estranho que a ultima linha seja de 1.6 ao inves de 1.5...
+% afinal, o delta-AAE era constante de 0.2 e so falhou nesse ultimo
+% Erro de digitacao do Wang ?!?!?
 
 % date=RioBranco(:,1); % data   Sempre mudar o site 
 % abs1=RioBranco(:,11); % AAOD 440nm
@@ -41,50 +65,157 @@ abs1=cell2mat(RioBranco(:,3)); % AAOD 440nm
 abs2=cell2mat(RioBranco(:,4)); % AAOD 675nm
 abs3=cell2mat(RioBranco(:,5)); % AAOD 870nm
 
+%hmjb para verificar que isso sao mesmos vetores:
+figure(1); clf; grid on; box on; hold on
+plot(abs1,'-r')
+plot(abs2,'-g')
+plot(abs3,'-b')
+legend('440', '675', '870')
+
+%hmjb aqui ta calculando o Absorp. Angs. entre 675 e 870
+% Sera que os dados da Bond sao justamente neste intervalo?? precisa verificar...
 AAE675 = -log(abs2./abs3)./log(675/870);
 
-for i = 1:length(bondmie.data(:,1));
-    for ii = 1:length(AAE675);
+%hmjb pra ter certeza que a formula ta certa, deixa eu calcular para 440-870
+% e comparar com a coluna #7 da aeronet
+AAE440_870 = -log(abs1./abs3)./log(440/870);
+
+%hmjb Sao Parecidos mas nao sao iguais... porque? 
+figure(2); clf; grid on; box on; hold on
+plot(cell2mat(RioBranco(:,7)),'-r')
+plot(AAE440_870,'-b')
+legend('AAE870 Aeronet', 'AAE870 script')
+
+figure(3); clf; grid on; box on; hold on
+plot(cell2mat(RioBranco(:,7)),AAE440_870,'o')
+xlabel('AAE870 Aeronet')
+ylabel('AAE870 script')
+
+clear isel
+%hmjb inicializa od dados
+AAE440 = nan(length(AAE675), 1);
+realdef = nan(length(AAE675), 1);
+
+BrAAOD   = nan(length(AAE675), 1);
+BrAAOD_r = nan(length(AAE675), 1);
+BrCont   = ones(length(AAE675), 1)*100;
+BrCont_r = nan(length(AAE675), 1);
+BCAAOD   = nan(length(AAE675), 1);
+
+ok(1:8)=0;
+%hmjb Para cada faixa de AAE na tabela da Bond
+for i = 1:length(bondmie.data(:,1))
+  
+  %hmjb vamos percorrer o vetor de medidas da Aeronet (eixo do tempo!!!)
+  for ii = 1:length(AAE675)
     
-    if AAE675(ii) >= bondmie.data(i,1)-0.1 & AAE675(ii) < bondmie.data(i,1)+0.1;
-        
-        AAE440 = -log(abs1./abs2)./log(440/675);
-        realdef = exp(AAE440)./exp(AAE675);
-        
-        if realdef(ii) > bondmie.data(i,3);
-            bcaae = AAE675+log(bondmie.data(i,2));
-            BCAAOD = abs3.*exp(-bcaae.*log(440/870));
-            BrAAOD = abs1-BCAAOD;
-            
-            bcaae_max = AAE675+log(bondmie.data(i,3));
-            bcaaod_max = abs3.*exp(-bcaae_max.*log(440/870));
-            braaod_min = abs1-bcaaod_max;
-            BrAAOD_r = BrAAOD-braaod_min;
-            
-            BrCont = 100.*BrAAOD./abs1;
-            BrCont_r = 100.*BrAAOD_r./abs1;
-            
+    %hmjb se o ii-esimo tempo for compativel com a linha certa da tabela
+    %da Bond, entao vamos processar usando esta linha
+    
+    % duplicada a ulitma linha da tabela para incluir o caso do AAE675 
+    % entre 1.4 e 1.5
+    %hmjb - nova solucao, agora vamos manter a tabela original e corrigir
+    %aqui:
+    
+    lowlim = bondmie.data(i,1)-0.1;
+    if i==length(bondmie.data(:,1))
+      lowlim = bondmie.data(i,1)-0.2;
+    end
+    
+    if AAE675(ii) >= lowlim & AAE675(ii) < bondmie.data(i,1)+0.1
+        if ok(i)==0
+          ok(i)=1;
+          disp([i, lowlim, bondmie.data(i,1)+0.1])
         end
-    else
-        BCAAOD = abs1;        
-    end
+      %hmjb grava a linha escolhida para cada tempo do vetor
+      isel(ii) = i;
+      
+      %hmjb ta errado! isso abs1 e abs2 sao vetores que contem todas as
+      %medidas!! devia ser feito apenas para a posicao (ii)
+      %AAE440 = -log(abs1./abs2)./log(440/675);
+      %AAE440(ii) = -log(abs1(ii)/abs2(ii))/log(440/675);
+      
+      % sera que isso eh um BUG no algoritmo do Wang?
+      % pega o abs1/abs2, mas usa 440 e 870? 
+      % devia ser abs3? 
+      % ou 870? 
+      % ou tá certo mesmo?
+      %=> conferir no paper
+      AAE440(ii) = -log(abs1(ii)/abs3(ii))/log(440/870);
+      
+      %hmjb ta fazendo a razao do 440/675 para o 675/870
+      % porque? o que isso significa? 
+      
+      % mas tambem ta errado, pois ta fazendo para TODAS as posicoes
+      % (tempos). 
+      %realdef) = exp(AAE440)./exp(AAE675);
+      realdef(ii) = exp(AAE440(ii))/exp(AAE675(ii));
+      
+      % hmjb
+      % a coluna #3 eh a coluna do MAX da bond... Era mesmo para fazer só
+      % se fosse maior que o maximo? Porque entao a bonda teria valores
+      % de minimo e de middle??? Se sempre tem que ser maior que o
+      % maximo? 
+      
+      if realdef(ii) > bondmie.data(i,3);
+        %bcaae(ii) = AAE675(ii)+log(bondmie.data(i,2));
+        bcaae(ii) = AAE675(ii)+log(bondmie.data(i,4));
+        BCAAOD(ii) = abs3(ii)*exp(-bcaae(ii)*log(440/870));
+        BrAAOD(ii) = abs1(ii)-BCAAOD(ii);
         
+        bcaae_max(ii) = AAE675(ii)+log(bondmie.data(i,3));
+        bcaaod_max(ii) = abs3(ii)*exp(-bcaae_max(ii)*log(440/870));
+        braaod_min(ii) = abs1(ii)-bcaaod_max(ii);
+        BrAAOD_r(ii) = BrAAOD(ii)-braaod_min(ii);
+        
+        BrCont(ii) = 100*BrAAOD(ii)/abs1(ii);
+        BrCont_r(ii) = 100*BrAAOD_r(ii)/abs1(ii);
+        
+        %hmjb esse fim de loop tambem ta errado!!! nao ta assim no codigo
+        %do Wang. O ELSE deveria ser para o caso de ser < que o Max da
+        %Bond
+        
+        % do jeito que ta para todas as linhas do loop em (i, linhas da
+        % bond), exceto uma, o codigo vai entrar aqui em baixo
+      else
+        BCAAOD(ii) = abs1(ii);
+        BrCont(ii) = 0;
+      end
     end
+    
+  end
 end
- 
-data_ATTO=[date BrAAOD BrAAOD_r BrCont BrCont_r BCAAOD]; 
+
+%hmjb acabou de rodar, vamos mostrar os resultados para os tempos= 1 e 2
+
+for t=1:2
+disp(['======================= tempo ',num2str(t)])
+disp(['abs1/abs2/abs3=' , num2str(abs1(t)), num2str(abs2(t)), num2str(abs3(t))])
+disp(['BrAAOD='         ,num2str(BrAAOD(t))])
+disp(['BrCont='         ,num2str(BrCont(t))])
+disp(['BCAAOD='         ,num2str(BCAAOD(t))])
+disp(['AAE440='         ,num2str(AAE440(t))])
+disp(['AAE675='         ,num2str(AAE675(t))])
+disp(['realdef='        ,num2str(realdef(t))])
+disp(['bond max='       ,num2str(bondmie.data(isel(t),3))])
+disp(['line bond table=',num2str(isel(t))])
+end
+
+
+data_ATTO_ok=[date BrAAOD BrAAOD_r BrCont BrCont_r BCAAOD]; 
+return
 
 clear AAE440 AAE675 abs1 abs2 abs3 bcaae bcaae_max bondmie BrAAOD braaod_min
-  clear BCAAOD bcaaod_max BrAAOD_r BrCont BrCont_r i ii inv realdef sd date
-    clear AltaFloresta ATTO Cuiaba ElAltoBolivia JiParana ManausEMBRAPA RioBranco SaoPaulo
+clear BCAAOD bcaaod_max BrAAOD_r BrCont BrCont_r i ii inv realdef sd date
+clear AltaFloresta ATTO Cuiaba ElAltoBolivia JiParana ManausEMBRAPA RioBranco SaoPaulo
     
-    cd 'D:\Documentos\Google Drive\Doutorado\AERONET_util_rapido\marco\atto\AAOD_absorcao\ABS\total_2019\'
+%cd 'D:\Documentos\Google Drive\Doutorado\AERONET_util_rapido\marco\atto\AAOD_absorcao\ABS\total_2019\'
     
 save data_Absorption_BrC_ATTO.mat
 
 %% 
 clear all;
-clc;
+%clc;
 load('data_Absorption_BrC_ATTO.mat')
 
 %Subtracao devido ao BC+BrC = Total
@@ -107,7 +238,7 @@ plot(data_ATTO(:,1),data_ATTO(:,7),'.k',data_ATTO(:,1),data_ATTO(:,2),'.y',...
     data_ATTO(:,1),data_ATTO(:,6),'.r')
 legend('BC', 'BrC','Soma BC + BrC', 'AAOD440')
 ylabel('AAOD')
-dynamicDateTicks
+%dynamicDateTicks
 
 % data_AF(:,7)= data_AF(:,6)-data_AF(:,2);
 % data_ATTO(:,7)= data_ATTO(:,6)-data_ATTO(:,2);
@@ -135,7 +266,7 @@ box(axes1,'on');
 hold on (axes1,'all');
 plot(Mensal(:,1),Mensal(:,4),'MarkerSize',14,'Marker','.','LineStyle','none','Color','b')
 errorbar(Mensal(:,1),Mensal(:,4),Mensal(:,5),'LineStyle','none','Color','r')
-dynamicDateTicks
+%dynamicDateTicks
 
 xlabel('Data','FontWeight','bold','FontSize',14)
 ylabel('%BrC','FontWeight','bold','FontSize',14)
@@ -155,7 +286,7 @@ plot(Mensal(:,1),Mensal(:,7),'MarkerSize',14,'Marker','.','LineStyle','-','Color
 %errorbar(MensalATTO(:,1),MensalATTO(:,7),DesvioATTO(:,7),'LineStyle','none','Color','g')
 plot(Mensal(:,1),Mensal(:,2),'MarkerSize',14,'Marker','.','LineStyle','-','Color',[0.9290 0.6940 0.1250])
 %errorbar(MensalAF(:,1),MensalAF(:,2),DesvioAF(:,2),'LineStyle','none','Color',[0.2 0 0])
-dynamicDateTicks
+%dynamicDateTicks
 
 xlabel('Data','FontWeight','bold','FontSize',14)
 ylabel('AAOD','FontWeight','bold','FontSize',14)

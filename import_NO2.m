@@ -12,13 +12,9 @@
 clear all
 close all
 [tmp,mydir]=fileparts(pwd);
-if strcmp(mydir,'Tiwa')
-  station=' - T2';
-else
-  station=[' - ' mydir]; 
-end;
+station=[' - ' mydir]; 
 
-fl_dir='NO2/';
+fl_dir='NO2/raw/';
 
 %-------------------------------
 
@@ -165,6 +161,8 @@ title_NO2='NO2 (CAPS)';
 
 fig1 = figure('visible','off');
 set(fig1,'InvertHardcopy','on'); 
+set(gcf,'PaperUnits','points','PaperSize',[775 390],...
+        'PaperPosition',[0 0 775 390],'position',[0,0,775,390]);
 set(gca, 'FontSize', 12, 'LineWidth', 2);
 plot(time_NO2,NO2,'k*') 
 title(['NO2 (CAPS)',station]) 
@@ -173,7 +171,6 @@ ylabel(label_NO2)
 ylim([0 40]) 
 box on 
 dynamicDateTicks([], [], 'dd/mm');
-set(gca,'Units','normalized','Position',[0.13 0.11 0.775 0.515]);
 nome=['fig/NO2_' mydir '_Time_series']; 
 print(fig1,'-dpng',[nome,'.png']);
 

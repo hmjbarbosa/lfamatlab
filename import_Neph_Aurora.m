@@ -114,7 +114,7 @@ elseif size(fl,1)>0
                         dummy_T1;dummy_T2;dummy_RH;dummy_P];
           NephFlag{count}=dummy_Flag;
           time_Neph(count)=dummy_time;
-          if time_Neph(count)<datenum(2015,12,1) || time_Neph(count)>datenum(2016,5,1) 
+          if time_Neph(count)<datenum(2015,12,1) || time_Neph(count)>datenum(2016,5,1) ...
                 || Neph(count,1)<-5 || Neph(count,1)>500
             Neph(count,:)=[];
             NephFlag{count}=[];
@@ -151,7 +151,7 @@ elseif size(fl,1)>0
                         dummy_T1;dummy_T2;dummy_RH;dummy_P];
           NephFlag{count}=dummy_Flag;
           time_Neph(count)=dummy_time;
-          if time_Neph(count)<datenum(2015,12,1) || time_Neph(count)>datenum(2016,5,1) 
+          if time_Neph(count)<datenum(2015,12,1) || time_Neph(count)>datenum(2016,5,1) ...
                 || Neph(count,1)<-5 || Neph(count,1)>500
             Neph(count,:)=[];
             NephFlag{count}=[];
@@ -222,6 +222,8 @@ title_Scatt='Ecotech Aurora 3000 - PM2.5';
 
 fig1 = figure('visible','off');
 set(fig1,'InvertHardcopy','on');
+set(gcf,'PaperUnits','points','PaperSize',[775 390],...
+        'PaperPosition',[0 0 775 390],'position',[0,0,775,390]);
 set(gca, 'FontSize', 12, 'LineWidth', 2); 
 plot(time_Neph,Neph(:,1),'r')
 hold on
@@ -233,7 +235,6 @@ ylabel(label_Scatt)
 ylim([0 200])
 box on
 dynamicDateTicks([], [], 'dd/mm');
-set(gca,'Units','normalized','Position',[0.13 0.11 0.775 0.515]);
 nome=['fig/Neph_' mydir '_Time_series'];
 print(fig1,'-dpng',[nome,'.png']);
 

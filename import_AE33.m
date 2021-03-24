@@ -4,11 +4,7 @@ close all
 AE33_name='193';
 
 [tmp,mydir]=fileparts(pwd);
-if strcmp(mydir,'Tiwa')
-  station=' -  T2';
-else
-  station=[' - ' mydir];
-end
+station=[' - ' mydir];
 
 fl_dir=['AE33_',AE33_name,'/'];
 
@@ -127,15 +123,6 @@ end
 days_Aeth=unique(floor(time_Aeth));
 save(['mat-files/AE33_',AE33_name,'.mat']);
 
-fid = fopen('0_Ascii-files/Aeth_Aurora.csv','wt');
-
-fprintf(fid,'Date(UTC),Aethering Blue (Mm-1), Aethering Green (Mm-1), Aethering Red, Back Aethering Blue (Mm-1), Back Aethering Green (Mm-1), Back Aethering Red (Mm-1)\n');
-
-for i=1:max(size(time_Aeth))
-    fprintf(fid,'%s, %2.1f\n',time_Aeth,Aeth(:,1),Aeth(:,2),Aeth(:,3),BAeth(:,1),BAeth(:,2),BAeth(:,3));
-end;
-fclose(fid);
-
 %--------------------------------
 disp('Making figures...')
 
@@ -144,14 +131,15 @@ title_Aeth=['BC concentration (Aethalometer AE33 ',AE33_name,' - 880nm)'];
 
 fig1 = figure('visible','off');
 set(fig1,'InvertHardcopy','on');
-set(gca, 'FontSize', 12, 'LineWidth', 2); 
+set(gcf,'PaperUnits','points','PaperSize',[775 390],...
+        'PaperPosition',[0 0 775 390],'position',[0,0,775,390]);
+set(gca,'FontSize', 12, 'LineWidth', 2); 
 plot(time_Aeth_avg,Aeth_avg(:,6))
 title([title_Aeth,station])
 xlabel('Date')
 ylabel(label_Aeth)
 box on
 dynamicDateTicks([], [], 'dd/mm');
-set(gca,'Units','normalized','Position',[0.13 0.11 0.775 0.515]);
 nome=['fig/Aethalometer_AE33_' mydir '_' AE33_name '_Time_series']
 print(fig1,'-dpng',[nome,'.png']);
 

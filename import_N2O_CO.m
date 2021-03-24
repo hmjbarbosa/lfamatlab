@@ -177,15 +177,16 @@ title_CO=('CO (Los Gatos)');
 
 fig1 = figure('visible','off');
 set(fig1,'InvertHardcopy','on');
+set(gcf,'PaperUnits','points','PaperSize',[775 390],...
+        'PaperPosition',[0 0 775 390],'position',[0,0,775,390]);
 set(gca, 'FontSize', 12, 'LineWidth', 2); 
 plot(time_CO_avg,CO_avg,'k*')
 title([title_CO,station])
 xlabel('Date')
 ylabel(label_CO)
-ylim([0 1000])
+ylim([0 2000])
 box on
 dynamicDateTicks([], [], 'dd/mm');
-set(gca,'Units','normalized','Position',[0.13 0.11 0.775 0.515]);
 nome=['fig/CO_Los_Gatos_' mydir '_Time_series'];
 print(fig1,'-dpng',[nome,'.png']);
 
@@ -313,6 +314,8 @@ title_N2O=('N2O (Los Gatos)');
 
 fig1 = figure('visible','off');
 set(fig1,'InvertHardcopy','on');
+set(gcf,'PaperUnits','points','PaperSize',[775 390],...
+        'PaperPosition',[0 0 775 390],'position',[0,0,775,390]);
 set(gca, 'FontSize', 12, 'LineWidth', 2); 
 plot(time_N2O_avg,N2O_avg,'k*')
 title([title_N2O,station])
@@ -321,7 +324,6 @@ ylabel(label_N2O)
 ylim([350 410])
 box on
 dynamicDateTicks([], [], 'dd/mm');
-set(gca,'Units','normalized','Position',[0.13 0.11 0.775 0.515]);
 nome=['fig/N2O_Los_Gatos_' mydir '_Time_series'];
 print(fig1,'-dpng',[nome,'.png']);
 
@@ -452,6 +454,8 @@ title_H2O=('H2O (Los Gatos)');
 
 fig1 = figure('visible','off');
 set(fig1,'InvertHardcopy','on');
+set(gcf,'PaperUnits','points','PaperSize',[775 390],...
+        'PaperPosition',[0 0 775 390],'position',[0,0,775,390]);
 set(gca, 'FontSize', 12, 'LineWidth', 2); 
 plot(time_H2O_avg,H2O_avg,'k*')
 title([title_H2O,station])
@@ -460,7 +464,6 @@ ylabel(label_H2O)
 ylim([-5 50])
 box on
 dynamicDateTicks([], [], 'dd/mm');
-set(gca,'Units','normalized','Position',[0.13 0.11 0.775 0.515]);
 nome=['fig/H2O_Los_Gatos_' mydir '_Time_series'];
 print(fig1,'-dpng',[nome,'.png']);
 

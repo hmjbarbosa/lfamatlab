@@ -12,11 +12,7 @@
 clear all
 close all
 [tmp,mydir]=fileparts(pwd);
-if strcmp(mydir,'Tiwa')
-  station=' - T2';
-else
-  station=[' - ' mydir];    
-end;
+station=[' - ' mydir];    
 
 fl_dir='Thermo_49i_O3/';
 
@@ -176,6 +172,8 @@ title_O3='O3 (Thermo)';
 
 fig1 = figure('visible','off');
 set(fig1,'InvertHardcopy','on'); 
+set(gcf,'PaperUnits','points','PaperSize',[775 390],...
+        'PaperPosition',[0 0 775 390],'position',[0,0,775,390]);
 set(gca, 'FontSize', 12, 'LineWidth', 2);
 plot(time_O3,O3,'k*')
 title([title_O3,station])
@@ -184,7 +182,6 @@ ylabel(label_O3)
 ylim([0 70])
 box on
 dynamicDateTicks([], [], 'dd/mm');
-set(gca,'Units','normalized','Position',[0.13 0.11 0.775 0.515]);
 nome=['fig/O3_' mydir '_Time_series'];
 print(fig1,'-dpng',[nome,'.png']);
 

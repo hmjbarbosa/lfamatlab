@@ -12,11 +12,7 @@
 clear all
 close all
 [tmp,mydir]=fileparts(pwd);
-if strcmp(mydir,'Tiwa')
-  station=' - T2';
-else
-  station=[' - ' mydir];    
-end;
+station=[' - ' mydir];    
 
 fl_dir='Thermo_43i_SO2/';
 
@@ -176,6 +172,8 @@ title_SO2='SO2 (Thermo)';
 
 fig1 = figure('visible','off');
 set(fig1,'InvertHardcopy','on'); 
+set(gcf,'PaperUnits','points','PaperSize',[775 390],...
+        'PaperPosition',[0 0 775 390],'position',[0,0,775,390]);
 set(gca, 'FontSize', 12, 'LineWidth', 2);
 plot(time_SO2,SO2,'k*')
 title(['SO2 (Thermo)',station])
@@ -184,7 +182,6 @@ ylabel(label_SO2)
 ylim([0 15])
 box on
 dynamicDateTicks([], [], 'dd/mm');
-set(gca,'Units','normalized','Position',[0.13 0.11 0.775 0.515]);
 nome=['fig/SO2_' mydir '_Time_series'];
 print(fig1,'-dpng',[nome,'.png']);
 

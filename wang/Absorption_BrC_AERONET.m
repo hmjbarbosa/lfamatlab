@@ -1,86 +1,31 @@
-% cálculo da contribuição de Brown carbon na absorção
+% Example of the use of WANG's algorithm to compute BrC from AERONET data
 
-% BrAAOD = é o BrC calculado AAOD a 440nm
-% BrAAOD_r = é a incerteza metodológica do resultado BrAAOD
-% BrCont = é a contribuição calculada de BrC AAOD para AAOD total a 440nm, em %
-% BrCont_r = é a incerteza metodológica do resultado BrCont
-% BCAAOD = considerando BC calculado AAOD a 440nm = AAOD 440nm
-
-% col_01 Date
-% col_02 BrC calculado AAOD 440nm
-% col_03 Incerteza do BrC calculado AAOD 440nm 
-% col_04 Porcentagem de BrC AAOD 440nm em relação ao total de AAOD 440nm
-% col_05 Incerteza da medida col_04
-% col_06 AAOD 440nm
-% col_07 BC real 440nm (AAOD 440nm - BrC 440nm)
-
-%clear all;
-%clc;
-
-%load('V3_Data_Inversion_2019_02_lev1_5.mat')
-
+% Need to change dir?
 %cd 'D:\Documentos\Google Drive\Doutorado\AERONET_util_rapido\marco\atto\AAOD_absorcao\ABS\total_2019\'
-RioBranco = import_abs('AAOD_1_5_Almucanter_Amazon_ATTO_Tower.tab');
-%hmjb As colunas lidas do arquivo sao:
-% 1 - dd:mm:yyyy (que bizarro!! quem eh que usa : para separar datas?!?)
-% 2 - hh:mm:ss (ufaa, achei que iam usar / para separar hora de minutos
+photometer = import_abs_AERONET('AAOD_1_5_Almucanter_Amazon_ATTO_Tower.tab');
+
+% Columns
+% 1 - dd:mm:yyyy
+% 2 - hh:mm:ss
 % 3 - AAOD em 440
 % 4 - AAOD em 675
 % 5 - AAOD em 870
-% 6 - AAOD em 1020
-% 7 - Abs Angstrom 440-870
 
-dateStr = [char(RioBranco(:,1)) char(RioBranco(:,2))];
+% Compute Matlab time
+dateStr = [char(photometer{1}) char(photometer{2})];
 date = datenum(dateStr,'dd:mm:yyyyHH:MM:SS');
 
-%Incluir aqui data e hora do começo do filtro e data e hora do fim do
-%filtro
-%Fazer as series temporais e os graficos de pizza
-
-%cd 'D:\Documentos\Google Drive\Doutorado\Tratamento\Analises_BrC\'
-bondmie = importdata('bondmie.csv');
-
-%bondmie2 = [...
-%    0.1,0.856656,0.971063,0.91386;...
-%    0.3,0.818784,0.923744,0.871264;...
-%    0.5,0.778845,0.90488,0.841863;...
-%    0.7,0.764685,0.877989,0.821337;...
-%    0.9,0.753013,0.890559,0.821786;...
-%    1.1,0.752517,1.05105,0.901783;...
-%    1.3,0.767029,1.08962,0.928326;...
-%    1.6,0.811395,1.03023,0.920813  ]
-
-%hmjb dados da Tammy Bond: 
-% bondmie_aae,bondmie_mindef,bondmie_maxdef,bondmie_middef
-% 0.1        ,0.856656      ,0.971063      ,0.91386
-% 0.3        ,0.818784      ,0.923744      ,0.871264
-% 0.5        ,0.778845      ,0.90488       ,0.841863
-% 0.7        ,0.764685      ,0.877989      ,0.821337
-% 0.9        ,0.753013      ,0.890559      ,0.821786
-% 1.1        ,0.752517      ,1.05105       ,0.901783
-% 1.3        ,0.767029      ,1.08962       ,0.928326
-% 1.6        ,0.811395      ,1.03023       ,0.920813
-
-%hmjb MUITO estranho que a ultima linha seja de 1.6 ao inves de 1.5...
-% afinal, o delta-AAE era constante de 0.2 e so falhou nesse ultimo
-% Erro de digitacao do Wang ?!?!?
-
-% date=RioBranco(:,1); % data   Sempre mudar o site 
-% abs1=RioBranco(:,11); % AAOD 440nm
-% abs2=RioBranco(:,12); % AAOD 675nm
-% abs3=RioBranco(:,13); % AAOD 870nm
-
-%date=RioBranco(:,1); % data   Sempre mudar o site 
-abs1=cell2mat(RioBranco(:,3)); % AAOD 440nm
-abs2=cell2mat(RioBranco(:,4)); % AAOD 675nm
-abs3=cell2mat(RioBranco(:,5)); % AAOD 870nm
+% Assign columns
+abs1 = photometer{3}; % AAOD 440nm
+abs2 = photometer{4}; % AAOD 675nm
+abs3 = photometer{5}; % AAOD 870nm
 
 %hmjb para verificar que isso sao mesmos vetores:
-figure(1); clf; grid on; box on; hold on
-plot(abs1,'-r')
-plot(abs2,'-g')
-plot(abs3,'-b')
-legend('440', '675', '870')
+%figure(1); clf; grid on; box on; hold on
+%plot(abs1,'-r')
+%plot(abs2,'-g')
+%plot(abs3,'-b')
+%legend('440', '675', '870')
 
 %hmjb aqui ta calculando o Absorp. Angs. entre 675 e 870
 % Sera que os dados da Bond sao justamente neste intervalo?? precisa verificar...
@@ -91,15 +36,15 @@ AAE675 = -log(abs2./abs3)./log(675/870);
 AAE440_870 = -log(abs1./abs3)./log(440/870);
 
 %hmjb Sao Parecidos mas nao sao iguais... porque? 
-figure(2); clf; grid on; box on; hold on
-plot(cell2mat(RioBranco(:,7)),'-r')
-plot(AAE440_870,'-b')
-legend('AAE870 Aeronet', 'AAE870 script')
-
-figure(3); clf; grid on; box on; hold on
-plot(cell2mat(RioBranco(:,7)),AAE440_870,'o')
-xlabel('AAE870 Aeronet')
-ylabel('AAE870 script')
+%figure(2); clf; grid on; box on; hold on
+%plot(cell2mat(photometer(:,7)),'-r')
+%plot(AAE440_870,'-b')
+%legend('AAE870 Aeronet', 'AAE870 script')
+%
+%figure(3); clf; grid on; box on; hold on
+%plot(cell2mat(photometer(:,7)),AAE440_870,'o')
+%xlabel('AAE870 Aeronet')
+%ylabel('AAE870 script')
 
 clear isel
 %hmjb inicializa od dados
@@ -217,7 +162,7 @@ return
 
 clear AAE440 AAE675 abs1 abs2 abs3 bcaae bcaae_max bondmie BrAAOD braaod_min
 clear BCAAOD bcaaod_max BrAAOD_r BrCont BrCont_r i ii inv realdef sd date
-clear AltaFloresta ATTO Cuiaba ElAltoBolivia JiParana ManausEMBRAPA RioBranco SaoPaulo
+clear AltaFloresta ATTO Cuiaba ElAltoBolivia JiParana ManausEMBRAPA photometer SaoPaulo
     
 %cd 'D:\Documentos\Google Drive\Doutorado\AERONET_util_rapido\marco\atto\AAOD_absorcao\ABS\total_2019\'
     
@@ -240,7 +185,7 @@ dataBC.BC440 = data_ATTO(:,7);
 dataBC.AAOD440 = data_ATTO(:,6);
 
 t = struct2table(dataBC)
-writetable(t,'BrC_BC_RioBranco_470nm_corrected.dat');
+writetable(t,'BrC_BC_photometer_470nm_corrected.dat');
 
 figure,
 plot(data_ATTO(:,1),data_ATTO(:,7),'.k',data_ATTO(:,1),data_ATTO(:,2),'.y',...

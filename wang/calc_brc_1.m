@@ -217,5 +217,13 @@ if exist('tidx')
 end
 
 % output
-brcdata = [BrAAOD BrAAOD_r BrCont BrCont_r BCAAOD isel AAE23]; 
+brcdata.BrAAOD    = BrAAOD;
+brcdata.BrAAOD_r  = BrAAOD_r;
+brcdata.BrCont    = BrCont;
+brcdata.BrCont_r  = BrCont_r;
+brcdata.BCAAOD    = BCAAOD;
+brcdata.AAOD      = abs1;
+brcdata.tableline = isel;
+brcdata.AAE13     = AAE13;
+brcdata.AAE23     = AAE23;
 

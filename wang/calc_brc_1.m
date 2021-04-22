@@ -145,6 +145,10 @@ isel       = nan(ntimes,1);
 % Compute AAE between wave2 and wave3 
 AAE23 = -log(abs2./abs3)/log(wave2/wave3);
 
+% Compute AAE between wave1 and wave3
+% NOTE: Wang's original code had a bug and used abs1/abs2
+AAE13 = -log(abs1./abs3)/log(wave1/wave3);
+
 %% LOOP on time 
 for t = 1:ntimes
   
@@ -157,7 +161,7 @@ for t = 1:ntimes
       
       % Compute AAE between wave1 and wave3
       % NOTE: Wang's original code had a bug and used abs1/abs2
-      AAE13(t) = -log(abs1(t)/abs3(t))/log(wave1/wave3);
+      %AAE13(t) = -log(abs1(t)/abs3(t))/log(wave1/wave3);
       
       % Change in slope
       realdef(t) = exp(AAE13(t))/exp(AAE23(t));
@@ -221,9 +225,12 @@ brcdata.BrAAOD    = BrAAOD;
 brcdata.BrAAOD_r  = BrAAOD_r;
 brcdata.BrCont    = BrCont;
 brcdata.BrCont_r  = BrCont_r;
+brcdata.BCAAE     = bcaae;
 brcdata.BCAAOD    = BCAAOD;
 brcdata.AAOD      = abs1;
 brcdata.tableline = isel;
 brcdata.AAE13     = AAE13;
 brcdata.AAE23     = AAE23;
+brcdata.ABS = [abs1,abs2,abs3];
+brcdata.WAVE = [wave1,wave2,wave3];
 

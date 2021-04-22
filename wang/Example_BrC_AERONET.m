@@ -53,6 +53,19 @@ ylabel('Fracton of Total AAOD 440 nm')
 dynamicDateTicks
 grid on; box on
 
+date = datevec(data_ATTO.date);
+
+figure(3); clf; 
+box on; hold on;
+%plot(data_ATTO.date, data_ATTO.AAOD,'-dk','markerfacecolor','k','markersize',5)
+plot(data_ATTO.date, data_ATTO.BCAAOD,'-db','markerfacecolor','b','markersize',5)
+plot(data_ATTO.date, data_ATTO.BrAAOD,'-dg','markerfacecolor','g','markersize',5)
+plot(data_ATTO.date, data_ATTO.BCAAOD+data_ATTO.BrAAOD,'-dr','markerfacecolor','r','markersize',5)
+%legend('Measured', 'Estimated BC', 'Estimated BrC','Estimated BC + BrC')
+ylabel('AAOD 440 nm')
+dynamicDateTicks
+grid on; box on
+
 
 return
 
